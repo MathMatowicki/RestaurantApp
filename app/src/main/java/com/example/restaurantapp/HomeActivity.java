@@ -23,9 +23,9 @@ import com.example.restaurantapp.Database.LocalCartDataSource;
 import com.example.restaurantapp.EventBus.CategoryClick;
 import com.example.restaurantapp.EventBus.CounterCartEvent;
 import com.example.restaurantapp.EventBus.FoodItemClick;
+import com.example.restaurantapp.EventBus.HideFABCart;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
-import com.google.android.material.snackbar.Snackbar;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -33,7 +33,6 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.Scheduler;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -71,8 +70,7 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                navController.navigate(R.id.nav_cart);
             }
         });
         drawer = findViewById(R.id.drawer_layout);
@@ -80,7 +78,8 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_menu, R.id.nav_food_detail, R.id.nav_food_list)
+                R.id.nav_home, R.id.nav_menu, R.id.nav_food_detail, R.id.nav_food_list,
+                R.id.nav_cart)
                 .setDrawerLayout(drawer)
                 .build();
         navController = Navigation.findNavController(this, R.id.nav_host_fragment);
@@ -117,6 +116,9 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
             case R.id.nav_menu:
                 navController.navigate(R.id.nav_menu);
                 break;
+            case R.id.nav_cart:
+                navController.navigate(R.id.nav_cart);
+                break;
         }
         return true;
     }
@@ -142,10 +144,20 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
 //            Toast.makeText(this, "Click to" + event.getCategoryModel().getName(), Toast.LENGTH_SHORT).show();
         }
     }
+
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onFoodItemClick(FoodItemClick event) {
         if (event.isSuccess()) {
             navController.navigate(R.id.nav_food_detail);
+        }
+    }
+
+    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+    public void onHideFABEvent(HideFABCart event) {
+        if (event.isHidden()) {
+            fab.hide();
+        } else {
+            fab.show();
         }
     }
 
@@ -158,24 +170,24 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
 
     private void countCartItem() {
         cartDataSource.countItemInCart(Common.currentUser.getUid())
-        .subscribeOn(Schedulers.io())
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new SingleObserver<Integer>() {
-            @Override
-            public void onSubscribe(@io.reactivex.annotations.NonNull Disposable d) {
-                
-            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new SingleObserver<Integer>() {
+                    @Override
+                    public void onSubscribe(@io.reactivex.annotations.NonNull Disposable d) {
 
-            @Override
-            public void onSuccess(@io.reactivex.annotations.NonNull Integer integer) {
-                fab.setCount(integer);
-            }
+                    }
 
-            @Override
-            public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                Toast.makeText(HomeActivity.this, "[COUNT CART]"+e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                    @Override
+                    public void onSuccess(@io.reactivex.annotations.NonNull Integer integer) {
+                        fab.setCount(integer);
+                    }
+
+                    @Override
+                    public void onError(@io.reactivex.annotations.NonNull Throwable e) {
+                        Toast.makeText(HomeActivity.this, "[COUNT CART]" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
 
     }
 }
