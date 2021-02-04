@@ -369,14 +369,13 @@ public class FoodDetailFragment extends Fragment implements TextWatcher {
                                 foodModel.setRatingCount(0l);
                             double sumRating = foodModel.getRatingValue() + ratingValue;
                             long ratingCount = foodModel.getRatingCount() + 1;
-                            double result = sumRating / ratingCount;
 
                             Map<String, Object> updateData = new HashMap<>();
-                            updateData.put("ratingValue", result);
+                            updateData.put("ratingValue", sumRating);
                             updateData.put("ratingCount", ratingCount);
 
                             //Update value of data
-                            foodModel.setRatingValue(result);
+                            foodModel.setRatingValue(sumRating);
                             foodModel.setRatingCount(ratingCount);
 
                             snapshot.getRef()
@@ -410,7 +409,7 @@ public class FoodDetailFragment extends Fragment implements TextWatcher {
         food_description.setText(new StringBuilder(foodModel.getDescription()));
 
         if (foodModel.getRatingValue() != null)
-            ratingBar.setRating(foodModel.getRatingValue().floatValue());
+            ratingBar.setRating(foodModel.getRatingValue().floatValue() / foodModel.getRatingCount());
         ((AppCompatActivity) getActivity())
                 .getSupportActionBar()
                 .setTitle(Common.selectedFood.getName());
@@ -449,7 +448,8 @@ public class FoodDetailFragment extends Fragment implements TextWatcher {
                 totalPrice += Double.parseDouble(addonModel.getPrice().toString());
 
 //      Size
-        totalPrice += Double.parseDouble(Common.selectedFood.getUserSelectedSize().getPrice().toString());
+        if (Common.selectedFood.getUserSelectedSize() != null)
+            totalPrice += Double.parseDouble(Common.selectedFood.getUserSelectedSize().getPrice().toString());
 
         displayPrice = totalPrice * (Integer.parseInt(numberButton.getNumber()));
         displayPrice = Math.round(displayPrice * 100.0 / 100.0);
