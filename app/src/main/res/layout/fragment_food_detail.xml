@@ -200,7 +200,7 @@
                 android:textColor="@android:color/white"
                 app:cornerRadius="4dp" />
 
-        </LinearLayout>
+        </LinearLayout>`
     </androidx.core.widget.NestedScrollView>
 
     <com.andremion.counterfab.CounterFab

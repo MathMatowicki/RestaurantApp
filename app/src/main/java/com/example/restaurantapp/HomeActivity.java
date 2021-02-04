@@ -12,6 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -30,7 +32,6 @@ import com.example.restaurantapp.EventBus.FoodItemClick;
 import com.example.restaurantapp.EventBus.HideFABCart;
 import com.example.restaurantapp.EventBus.PopularCategoryClick;
 import com.example.restaurantapp.Model.CategoryModel;
-import com.example.restaurantapp.Model.CommentModel;
 import com.example.restaurantapp.Model.FoodModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
@@ -240,13 +241,13 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                                         .addListenerForSingleValueEvent(new ValueEventListener() {
                                             @Override
                                             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                                if(snapshot.exists()){
-                                                    for(DataSnapshot itemSnapshot: snapshot.getChildren()){
+                                                if (snapshot.exists()) {
+                                                    for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
                                                         Common.selectedFood = itemSnapshot.getValue(FoodModel.class);
                                                         Common.categorySelected.setMenu_id(snapshot.getKey());
                                                     }
                                                     navController.navigate(R.id.nav_food_detail);
-                                                }else{
+                                                } else {
 
                                                     Toast.makeText(HomeActivity.this, "Item doesn't exist", Toast.LENGTH_SHORT).show();
                                                 }
@@ -301,13 +302,13 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                                         .addListenerForSingleValueEvent(new ValueEventListener() {
                                             @Override
                                             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                                if(snapshot.exists()){
-                                                    for(DataSnapshot itemSnapshot: snapshot.getChildren()){
+                                                if (snapshot.exists()) {
+                                                    for (DataSnapshot itemSnapshot : snapshot.getChildren()) {
                                                         Common.selectedFood = itemSnapshot.getValue(FoodModel.class);
                                                         Common.selectedFood.setKey(snapshot.getKey());
                                                     }
                                                     navController.navigate(R.id.nav_food_detail);
-                                                }else{
+                                                } else {
 
                                                     Toast.makeText(HomeActivity.this, "Item doesn't exist", Toast.LENGTH_SHORT).show();
                                                 }
@@ -361,5 +362,25 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
                     }
                 });
 
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_settings).setVisible(true);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_settings) {
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "some notification" )
+                    .setSmallIcon(R.drawable.ic_baseline_add_alert_24)
+                    .setContentTitle("Random notification")
+                    .setContentText("Are you hungry?")
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+            notificationManagerCompat.notify(1,builder.build());
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

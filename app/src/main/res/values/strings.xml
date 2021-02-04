@@ -31,4 +31,5 @@
     <string name="ship_to_this">Ship to this Address</string>
     <string name="payment_method">Payment Method</string>
     <string name="cash_on_delivery">Cash On Delivery</string>
+    <string name="action_notification">Notification</string>
 </resources>
