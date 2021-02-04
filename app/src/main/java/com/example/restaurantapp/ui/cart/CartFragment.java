@@ -1,8 +1,12 @@
 package com.example.restaurantapp.ui.cart;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -20,10 +24,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.restaurantapp.Adapter.MyCartAdapter;
 import com.example.restaurantapp.Common.Common;
+import com.example.restaurantapp.Common.MySwipeHelper;
 import com.example.restaurantapp.Database.CartDataSource;
 import com.example.restaurantapp.Database.CartDatabase;
 import com.example.restaurantapp.Database.CartItem;
 import com.example.restaurantapp.Database.LocalCartDataSource;
+import com.example.restaurantapp.EventBus.CounterCartEvent;
 import com.example.restaurantapp.EventBus.HideFABCart;
 import com.example.restaurantapp.EventBus.UpdateItemInCart;
 import com.example.restaurantapp.R;
@@ -56,6 +62,8 @@ public class CartFragment extends Fragment {
     @BindView(R.id.group_place_holder)
     CardView group_place_holder;
 
+    private MyCartAdapter myCartAdapter;
+
     private Unbinder unbinder;
     private CartViewModel cartViewModel;
 
@@ -68,7 +76,7 @@ public class CartFragment extends Fragment {
         cartViewModel.getMutableLiveDataCartItems().observe(getViewLifecycleOwner(), new Observer<List<CartItem>>() {
             @Override
             public void onChanged(List<CartItem> cartItems) {
-                if ( cartItems == null  || cartItems.isEmpty()) {
+                if (cartItems == null || cartItems.isEmpty()) {
                     recycler_cart.setVisibility(View.GONE);
                     group_place_holder.setVisibility(View.GONE);
                     txt_empty_cart.setVisibility(View.VISIBLE);
@@ -77,8 +85,8 @@ public class CartFragment extends Fragment {
                     group_place_holder.setVisibility(View.VISIBLE);
                     txt_empty_cart.setVisibility(View.GONE);
 
-                    MyCartAdapter adapter = new MyCartAdapter(getContext(), cartItems);
-                    recycler_cart.setAdapter(adapter);
+                    myCartAdapter = new MyCartAdapter(getContext(), cartItems);
+                    recycler_cart.setAdapter(myCartAdapter);
                 }
             }
         });
@@ -88,6 +96,7 @@ public class CartFragment extends Fragment {
     }
 
     private void initViews() {
+        setHasOptionsMenu(true);
         cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
 
         EventBus.getDefault().postSticky(new HideFABCart(true));
@@ -96,6 +105,103 @@ public class CartFragment extends Fragment {
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recycler_cart.setLayoutManager(layoutManager);
         recycler_cart.addItemDecoration(new DividerItemDecoration(getContext(), layoutManager.getOrientation()));
+
+        MySwipeHelper mySwipeHelper = new MySwipeHelper(getContext(), recycler_cart, 200) {
+            @Override
+            public void instantiateMyButton(RecyclerView.ViewHolder viewHolder, List<MyButton> buff) {
+                buff.add(new MyButton(getContext(), "Delete", 30, 0, Color.parseColor("#FF3C30"),
+                        pos -> {
+                            CartItem cartItem = myCartAdapter.getItemAtPosition(pos);
+                            cartDataSource.deleteCartItem(cartItem)
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe(new SingleObserver<Integer>() {
+                                        @Override
+                                        public void onSubscribe(@io.reactivex.annotations.NonNull Disposable d) {
+
+                                        }
+
+                                        @Override
+                                        public void onSuccess(@io.reactivex.annotations.NonNull Integer integer) {
+                                            myCartAdapter.notifyItemRemoved(pos);
+                                            sumAllItemInCart();
+                                            EventBus.getDefault().postSticky(new CounterCartEvent(true));//Update FAB
+                                            Toast.makeText(getContext(), "Delete item from cart success", Toast.LENGTH_SHORT).show();
+                                        }
+
+                                        @Override
+                                        public void onError(@io.reactivex.annotations.NonNull Throwable e) {
+                                            Toast.makeText(getContext(), "" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+
+                        }));
+            }
+        };
+        sumAllItemInCart();
+    }
+
+    private void sumAllItemInCart() {
+        cartDataSource.sumPriceInCart(Common.currentUser.getUid())
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new SingleObserver<Double>() {
+                    @Override
+                    public void onSubscribe(@io.reactivex.annotations.NonNull Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(@io.reactivex.annotations.NonNull Double aDouble) {
+                        txt_total_price.setText(new StringBuilder().append(aDouble));
+                    }
+
+                    @Override
+                    public void onError(@io.reactivex.annotations.NonNull Throwable e) {
+                        if(e.getMessage().contains("Query returned empty"))
+                            Toast.makeText(getContext(), ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(@NonNull Menu menu) {
+        menu.findItem(R.id.action_settings).setVisible(false); // Hide home menu
+        super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        inflater.inflate(R.menu.cart_menu,menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if(item.getItemId() == R.id.action_clear_cart){
+            cartDataSource.cleanCart(Common.currentUser.getUid())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new SingleObserver<Integer>() {
+                        @Override
+                        public void onSubscribe(@io.reactivex.annotations.NonNull Disposable d) {
+                            
+                        }
+
+                        @Override
+                        public void onSuccess(@io.reactivex.annotations.NonNull Integer integer) {
+                            Toast.makeText(getContext(), "Clear Cart Success", Toast.LENGTH_SHORT).show();
+                            EventBus.getDefault().postSticky(new CounterCartEvent(true));
+                        }
+
+                        @Override
+                        public void onError(@io.reactivex.annotations.NonNull Throwable e) {
+                            Toast.makeText(getContext(), ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -132,7 +238,7 @@ public class CartFragment extends Fragment {
                         @Override
                         public void onSuccess(@io.reactivex.annotations.NonNull Integer integer) {
                             calculateTotalPrice();
-                            // Fox error refresh recycler view after update
+                            // Fix error refresh recycler view after update
                             recycler_cart.getLayoutManager().onRestoreInstanceState(recyclerViewState);
                         }
 
