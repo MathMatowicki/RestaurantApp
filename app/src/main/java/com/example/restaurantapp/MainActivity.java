@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
         View itemView = LayoutInflater.from(this).inflate(R.layout.layout_register, null);
         EditText edt_name = itemView.findViewById(R.id.edt_name);
-        EditText edt_address = itemView.findViewById(R.id.edt_addresss);
+        EditText edt_address = itemView.findViewById(R.id.edt_address);
         EditText edt_phone = itemView.findViewById(R.id.edt_phone);
 //        Set data
         edt_phone.setText(user.getPhoneNumber());

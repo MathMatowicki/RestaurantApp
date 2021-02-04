@@ -1,5 +1,6 @@
 package com.example.restaurantapp.ui.cart;
 
+import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -9,6 +10,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +46,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -61,6 +66,51 @@ public class CartFragment extends Fragment {
     TextView txt_empty_cart;
     @BindView(R.id.group_place_holder)
     CardView group_place_holder;
+
+    @OnClick(R.id.btn_place_order)
+    void onPlaceOrderClick() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("One more step!");
+
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.layout_place_order, null);
+
+        EditText edt_address = (EditText)view.findViewById(R.id.edt_address);
+        RadioButton rdi_home = (RadioButton)view.findViewById(R.id.rdi_home_address);
+        RadioButton rdi_other_address = (RadioButton)view.findViewById(R.id.rdi_other_address);
+        RadioButton rdi_ship_to_this = (RadioButton)view.findViewById(R.id.rdi_ship_this_address);
+        RadioButton rdi_cod = (RadioButton)view.findViewById(R.id.rdi_cod);
+
+//        Data
+        edt_address.setText(Common.currentUser.getAddress());
+
+//        Event
+        rdi_home.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(isChecked){
+                edt_address.setText(Common.currentUser.getAddress());
+            }
+        });
+        rdi_other_address.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(isChecked){
+                edt_address.setText(""); // Clear
+                edt_address.setHint("Enter Other Address");
+            }
+        });
+        rdi_ship_to_this.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(isChecked){
+                edt_address.setText(""); // Clear
+                Toast.makeText(getContext(), "Implement with Google API", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setView(view);
+        builder.setNegativeButton("NO",(dialog, which) -> {
+            dialog.dismiss();
+        }).setPositiveButton("YES",(dialog, which) -> {
+            Toast.makeText(getContext(), "Implement later!", Toast.LENGTH_SHORT).show();
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
 
     private MyCartAdapter myCartAdapter;
 
@@ -153,12 +203,12 @@ public class CartFragment extends Fragment {
 
                     @Override
                     public void onSuccess(@io.reactivex.annotations.NonNull Double aDouble) {
-                        txt_total_price.setText(new StringBuilder().append(aDouble));
+                        txt_total_price.setText(new StringBuilder("Total: $").append(aDouble));
                     }
 
                     @Override
                     public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                        if(e.getMessage().contains("Query returned empty"))
+                        if (e.getMessage().contains("Query returned empty"))
                             Toast.makeText(getContext(), "Cart Empty :c", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -172,20 +222,20 @@ public class CartFragment extends Fragment {
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        inflater.inflate(R.menu.cart_menu,menu);
+        inflater.inflate(R.menu.cart_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if(item.getItemId() == R.id.action_clear_cart){
+        if (item.getItemId() == R.id.action_clear_cart) {
             cartDataSource.cleanCart(Common.currentUser.getUid())
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(new SingleObserver<Integer>() {
                         @Override
                         public void onSubscribe(@io.reactivex.annotations.NonNull Disposable d) {
-                            
+
                         }
 
                         @Override
@@ -244,7 +294,7 @@ public class CartFragment extends Fragment {
 
                         @Override
                         public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                            Toast.makeText(getContext(), "[UPDATE CART]" , Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "[UPDATE CART]", Toast.LENGTH_SHORT).show();
                         }
                     });
         }
@@ -262,13 +312,13 @@ public class CartFragment extends Fragment {
 
                     @Override
                     public void onSuccess(@io.reactivex.annotations.NonNull Double price) {
-                        txt_total_price.setText(new StringBuilder("Total: ")
+                        txt_total_price.setText(new StringBuilder("Total: $")
                                 .append(Common.formatPrice(price)));
                     }
 
                     @Override
                     public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                        Toast.makeText(getContext(), "[SUM CART]" , Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "[SUM CART]", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

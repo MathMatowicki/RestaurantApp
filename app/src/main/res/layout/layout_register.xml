@@ -22,7 +22,7 @@
         android:layout_height="wrap_content">
 
         <EditText
-            android:id="@+id/edt_addresss"
+            android:id="@+id/edt_address"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Your Address" />

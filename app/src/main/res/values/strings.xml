@@ -25,4 +25,10 @@
     <string name="menu_cart">Cart</string>
     <string name="action_clear_cart">Clear Cart</string>
     <string name="sign_out">Sign out</string>
+    <string name="delivery_method">Delivery Method</string>
+    <string name="home_address">Home Address</string>
+    <string name="other_address">Other Address</string>
+    <string name="ship_to_this">Ship to this Address</string>
+    <string name="payment_method">Payment Method</string>
+    <string name="cash_on_delivery">Cash On Delivery</string>
 </resources>
