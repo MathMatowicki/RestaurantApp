@@ -1,8 +1,11 @@
 package com.example.restaurantapp.ui.cart;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -10,7 +13,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.TextView;
@@ -37,6 +39,11 @@ import com.example.restaurantapp.EventBus.CounterCartEvent;
 import com.example.restaurantapp.EventBus.HideFABCart;
 import com.example.restaurantapp.EventBus.UpdateItemInCart;
 import com.example.restaurantapp.R;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -58,6 +65,11 @@ public class CartFragment extends Fragment {
     private Parcelable recyclerViewState;
     private CartDataSource cartDataSource;
 
+    LocationRequest locationRequest;
+    LocationCallback locationCallback;
+    FusedLocationProviderClient fusedLocationProviderClient;
+    Location currentLocation;
+
     @BindView(R.id.recycler_cart)
     RecyclerView recycler_cart;
     @BindView(R.id.txt_total_price)
@@ -67,6 +79,7 @@ public class CartFragment extends Fragment {
     @BindView(R.id.group_place_holder)
     CardView group_place_holder;
 
+    @SuppressLint("MissingPermission")
     @OnClick(R.id.btn_place_order)
     void onPlaceOrderClick() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
@@ -74,38 +87,54 @@ public class CartFragment extends Fragment {
 
         View view = LayoutInflater.from(getContext()).inflate(R.layout.layout_place_order, null);
 
-        EditText edt_address = (EditText)view.findViewById(R.id.edt_address);
-        RadioButton rdi_home = (RadioButton)view.findViewById(R.id.rdi_home_address);
-        RadioButton rdi_other_address = (RadioButton)view.findViewById(R.id.rdi_other_address);
-        RadioButton rdi_ship_to_this = (RadioButton)view.findViewById(R.id.rdi_ship_this_address);
-        RadioButton rdi_cod = (RadioButton)view.findViewById(R.id.rdi_cod);
+        EditText edt_address = (EditText) view.findViewById(R.id.edt_address);
+        EditText edt_comment = (EditText) view.findViewById(R.id.edt_comment);
+        TextView txt_address = (TextView) view.findViewById(R.id.txt_address_detail);
+        RadioButton rdi_home = (RadioButton) view.findViewById(R.id.rdi_home_address);
+        RadioButton rdi_other_address = (RadioButton) view.findViewById(R.id.rdi_other_address);
+        RadioButton rdi_ship_to_this = (RadioButton) view.findViewById(R.id.rdi_ship_this_address);
+        RadioButton rdi_cod = (RadioButton) view.findViewById(R.id.rdi_cod);
 
 //        Data
         edt_address.setText(Common.currentUser.getAddress());
 
 //        Event
         rdi_home.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if(isChecked){
+            if (isChecked) {
                 edt_address.setText(Common.currentUser.getAddress());
+                txt_address.setVisibility(View.GONE);
             }
         });
         rdi_other_address.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if(isChecked){
+            if (isChecked) {
                 edt_address.setText(""); // Clear
                 edt_address.setHint("Enter Other Address");
+                txt_address.setVisibility(View.GONE);
             }
         });
         rdi_ship_to_this.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if(isChecked){
-                edt_address.setText(""); // Clear
-                Toast.makeText(getContext(), "Implement with Google API", Toast.LENGTH_SHORT).show();
+            if (isChecked) {
+                fusedLocationProviderClient.getLastLocation()
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(getContext(), "Failure Location :c", Toast.LENGTH_SHORT).show();
+                            txt_address.setVisibility(View.GONE);
+                        })
+                        .addOnCompleteListener(task -> {
+                            String coordinates = new StringBuilder()
+                                    .append(task.getResult().getLatitude())
+                                    .append(task.getResult().getLongitude()).toString();
+                            edt_address.setText(coordinates);
+                            txt_address.setText("Implement late with google API ");
+                            txt_address.setVisibility(View.VISIBLE);
+                        });
+
             }
         });
 
         builder.setView(view);
-        builder.setNegativeButton("NO",(dialog, which) -> {
+        builder.setNegativeButton("NO", (dialog, which) -> {
             dialog.dismiss();
-        }).setPositiveButton("YES",(dialog, which) -> {
+        }).setPositiveButton("YES", (dialog, which) -> {
             Toast.makeText(getContext(), "Implement later!", Toast.LENGTH_SHORT).show();
         });
         AlertDialog dialog = builder.create();
@@ -142,7 +171,35 @@ public class CartFragment extends Fragment {
         });
         unbinder = ButterKnife.bind(this, root);
         initViews();
+        initLocation();
         return root;
+    }
+
+    @SuppressLint("MissingPermission")
+    private void initLocation() {
+        buildLocationRequest();
+        buildLocationCallback();
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getContext());
+
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+    }
+
+    private void buildLocationCallback() {
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                super.onLocationResult(locationResult);
+                currentLocation = locationResult.getLastLocation();
+            }
+        };
+    }
+
+    private void buildLocationRequest() {
+        locationRequest = new LocationRequest();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(5000);
+        locationRequest.setFastestInterval(3000);
+        locationRequest.setSmallestDisplacement(10f);
     }
 
     private void initViews() {
@@ -262,12 +319,25 @@ public class CartFragment extends Fragment {
         calculateTotalPrice();
     }
 
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (fusedLocationProviderClient != null) {
+
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        }
+    }
+
     @Override
     public void onStop() {
         EventBus.getDefault().postSticky(new HideFABCart(false));
         cartViewModel.onStop();
         if (EventBus.getDefault().isRegistered(this))
             EventBus.getDefault().unregister(this);
+        if (fusedLocationProviderClient != null) {
+            fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        }
         super.onStop();
     }
 
