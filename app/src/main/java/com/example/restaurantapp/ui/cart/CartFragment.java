@@ -131,7 +131,7 @@ public class CartFragment extends Fragment {
 
                                         @Override
                                         public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                                            Toast.makeText(getContext(), "" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(getContext(), "Cart Error :c", Toast.LENGTH_SHORT).show();
                                         }
                                     });
 
@@ -159,7 +159,7 @@ public class CartFragment extends Fragment {
                     @Override
                     public void onError(@io.reactivex.annotations.NonNull Throwable e) {
                         if(e.getMessage().contains("Query returned empty"))
-                            Toast.makeText(getContext(), ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "Cart Empty :c", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -196,7 +196,7 @@ public class CartFragment extends Fragment {
 
                         @Override
                         public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                            Toast.makeText(getContext(), ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "Cart error :c", Toast.LENGTH_SHORT).show();
                         }
                     });
             return true;
@@ -244,7 +244,7 @@ public class CartFragment extends Fragment {
 
                         @Override
                         public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                            Toast.makeText(getContext(), "[UPDATE CART]" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "[UPDATE CART]" , Toast.LENGTH_SHORT).show();
                         }
                     });
         }
@@ -268,7 +268,7 @@ public class CartFragment extends Fragment {
 
                     @Override
                     public void onError(@io.reactivex.annotations.NonNull Throwable e) {
-                        Toast.makeText(getContext(), "[SUM CART]" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "[SUM CART]" , Toast.LENGTH_SHORT).show();
                     }
                 });
     }

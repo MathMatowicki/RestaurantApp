@@ -147,7 +147,7 @@ public class MyFoodListAdapter extends RecyclerView.Adapter<MyFoodListAdapter.My
                                             Toast.makeText(context, "Add to Cart success", Toast.LENGTH_SHORT).show();
                                             EventBus.getDefault().postSticky(new CounterCartEvent(true));
                                         }, throwable -> {
-                                            Toast.makeText(context, "[CART ERROR]" + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(context, "Cart error :c" , Toast.LENGTH_SHORT).show();
                                         }));
                             } else
                                 Toast.makeText(context, "[GET CART]" + e.getMessage(), Toast.LENGTH_SHORT).show();
