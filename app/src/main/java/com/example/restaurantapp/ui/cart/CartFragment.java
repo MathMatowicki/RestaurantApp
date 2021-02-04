@@ -3,6 +3,8 @@ package com.example.restaurantapp.ui.cart;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
@@ -49,15 +51,19 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
+import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
 public class CartFragment extends Fragment {
@@ -122,12 +128,29 @@ public class CartFragment extends Fragment {
                         .addOnCompleteListener(task -> {
                             String coordinates = new StringBuilder()
                                     .append(task.getResult().getLatitude())
+                                    .append("/")
                                     .append(task.getResult().getLongitude()).toString();
-                            edt_address.setText(coordinates);
-                            txt_address.setText("Implement late with google API ");
-                            txt_address.setVisibility(View.VISIBLE);
-                        });
 
+                            Single<String> singleAddress = Single.just(getAddressFromLatLng(task
+                                    .getResult().getLatitude(), task.getResult().getLongitude()));
+
+                            Disposable disposable = singleAddress.subscribeWith(new DisposableSingleObserver<String>() {
+
+                                @Override
+                                public void onSuccess(@io.reactivex.annotations.NonNull String s) {
+                                    edt_address.setText(coordinates);
+                                    txt_address.setText(s);
+                                    txt_address.setVisibility(View.VISIBLE);
+                                }
+
+                                @Override
+                                public void onError(@io.reactivex.annotations.NonNull Throwable e) {
+                                    edt_address.setText(coordinates);
+                                    txt_address.setText(e.getMessage());
+                                    txt_address.setVisibility(View.VISIBLE);
+                                }
+                            });
+                        });
             }
         });
 
@@ -139,6 +162,25 @@ public class CartFragment extends Fragment {
         });
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    private String getAddressFromLatLng(double latitude, double longitude) {
+        Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+        String result = "";
+        try {
+            List<Address> addressList = geocoder.getFromLocation(latitude, longitude, 1);
+            if (addressList != null && addressList.size() > 0) {
+                Address address = addressList.get(0);
+                StringBuilder stringBuilder = new StringBuilder(address.getAddressLine(0));
+                result = stringBuilder.toString();
+            } else {
+                result = "Address not found :c";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = e.getMessage();
+        }
+        return result;
     }
 
     private MyCartAdapter myCartAdapter;
